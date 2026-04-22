@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -38,7 +39,7 @@ const navItems = [
   ["#deals", "Deals"],
   ["#features", "Features"],
   ["#cta", "Sign up"],
-];
+] as const;
 
 const deals: Deal[] = [
   {
@@ -116,7 +117,7 @@ const features = [
   ["M5 13l4 4L19 7M5 13V5l14 2v2", "Smart alerts", "Track drops for fashion, electronics, lifestyle, and everyday essentials."],
 ];
 
-const footerGroups = [
+const footerGroups: Array<[string, string[]]> = [
   ["Product", ["Deal feed", "Price alerts", "Browser extension", "Mobile app"]],
   ["Resources", ["Savings guide", "Marketplace reports", "Coupon playbook", "Help center"]],
   ["Company", ["About", "Careers", "Partner with us", "Press"]],
@@ -137,9 +138,16 @@ function Icon({ path }: { path: string }) {
 function Index() {
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
   const [copiedLink, setCopiedLink] = useState("");
+  const [activeSection, setActiveSection] = useState("#top");
 
   useEffect(() => {
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const elements = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
+    if (reducedMotion) {
+      elements.forEach((element) => element.classList.add("is-visible"));
+      return;
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -153,6 +161,26 @@ function Index() {
     );
 
     elements.forEach((element) => observer.observe(element));
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const sectionIds = navItems.map(([href]) => href.slice(1));
+    const sections = sectionIds
+      .map((id) => document.getElementById(id))
+      .filter((section): section is HTMLElement => Boolean(section));
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible) setActiveSection(`#${visible.target.id}`);
+      },
+      { rootMargin: "-28% 0px -58% 0px", threshold: [0.08, 0.18, 0.32] },
+    );
+
+    sections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
   }, []);
 
@@ -172,6 +200,7 @@ function Index() {
   const copyDealLink = async (deal: Deal) => {
     await navigator.clipboard.writeText(deal.link);
     setCopiedLink(deal.link);
+    toast.success("Deal link copied", { description: `${deal.title} is ready to share.` });
     window.setTimeout(() => setCopiedLink(""), 1800);
   };
 
@@ -197,7 +226,7 @@ function Index() {
         </a>
         <div className="sd-nav-links">
           {navItems.map(([href, label]) => (
-            <a key={href} href={href}>{label}</a>
+            <a key={href} href={href} className={activeSection === href ? "is-active" : undefined}>{label}</a>
           ))}
         </div>
         <a href="#cta" className="sd-nav-cta">Join free</a>
@@ -335,7 +364,7 @@ function Index() {
           {footerGroups.map(([title, links]) => (
             <div key={title} className="sd-footer-group">
               <h3>{title}</h3>
-              {(links as string[]).map((link) => (
+              {links.map((link) => (
                 <a key={link} href="#top">{link}</a>
               ))}
             </div>
