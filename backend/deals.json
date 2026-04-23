@@ -1,0 +1,90 @@
+{
+  "lastRefreshed": "2026-04-23T08:00:00.000Z",
+  "totalDeals": 6,
+  "deals": [
+    {
+      "store": "Amazon",
+      "title": "NoiseFit Halo Smartwatch",
+      "price": "₹2,299",
+      "original": "₹6,999",
+      "off": "67% OFF",
+      "tag": "Electronics",
+      "link": "https://www.amazon.in",
+      "detail": "AMOLED display, premium metal build, Bluetooth calling, and a verified lightning markdown.",
+      "image": null,
+      "platform": "amazon",
+      "category": "Electronics",
+      "discountPercent": 67
+    },
+    {
+      "store": "Flipkart",
+      "title": "Samsung 4K Crystal TV",
+      "price": "₹31,990",
+      "original": "₹52,900",
+      "off": "40% OFF",
+      "tag": "Electronics",
+      "link": "https://www.flipkart.com",
+      "detail": "Bank-card stacked pricing on a 43-inch 4K panel with HDR, smart apps, and low delivery fee.",
+      "image": null,
+      "platform": "flipkart",
+      "category": "Electronics",
+      "discountPercent": 40
+    },
+    {
+      "store": "Amazon",
+      "title": "boAt Airdopes ProGear",
+      "price": "₹1,499",
+      "original": "₹4,990",
+      "off": "70% OFF",
+      "tag": "Electronics",
+      "link": "https://www.amazon.in",
+      "detail": "Low-latency earbuds with fast charging, clean call mics, and a short-window launch discount.",
+      "image": null,
+      "platform": "amazon",
+      "category": "Electronics",
+      "discountPercent": 70
+    },
+    {
+      "store": "Flipkart",
+      "title": "Apple iPad 10th Gen",
+      "price": "₹29,999",
+      "original": "₹39,900",
+      "off": "25% OFF",
+      "tag": "Electronics",
+      "link": "https://www.flipkart.com",
+      "detail": "Trusted seller deal with instant card savings on the 64GB Wi-Fi model in multiple colors.",
+      "image": null,
+      "platform": "flipkart",
+      "category": "Electronics",
+      "discountPercent": 25
+    },
+    {
+      "store": "Amazon",
+      "title": "Roadster Denim Jacket",
+      "price": "₹1,199",
+      "original": "₹3,499",
+      "off": "66% OFF",
+      "tag": "Fashion",
+      "link": "https://www.amazon.in",
+      "detail": "Season-ready denim layer with coupon-inclusive pricing and all core sizes currently in stock.",
+      "image": null,
+      "platform": "amazon",
+      "category": "Fashion",
+      "discountPercent": 66
+    },
+    {
+      "store": "Amazon",
+      "title": "Nike Running Sneakers",
+      "price": "₹3,247",
+      "original": "₹7,995",
+      "off": "59% OFF",
+      "tag": "Fashion",
+      "link": "https://www.amazon.in",
+      "detail": "Comfort running silhouette with fresh inventory, exchange support, and stacked style-sale pricing.",
+      "image": null,
+      "platform": "amazon",
+      "category": "Fashion",
+      "discountPercent": 59
+    }
+  ]
+}

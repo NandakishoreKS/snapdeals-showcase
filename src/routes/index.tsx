@@ -1,6 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
+// =============================================================
+// API CONFIG
+// Change this URL when deploying to production (your Render URL)
+// =============================================================
+const API_BASE_URL = "http://localhost:5000";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -22,16 +28,31 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
+// Deal type — matches exactly what the backend returns.
+// Fields map to the existing card HTML structure.
 type Deal = {
-  store: string;
-  title: string;
-  price: string;
-  original: string;
-  off: string;
-  tag: string;
-  link: string;
-  detail: string;
+  store: string;       // "Amazon" | "Flipkart"
+  title: string;       // Product name
+  price: string;       // Deal price, formatted: "₹1,499"
+  original: string;    // Original price, formatted: "₹4,990"
+  off: string;         // Discount label: "70% OFF"
+  tag: string;         // Category label: "Electronics"
+  link: string;        // Affiliate URL (opens in new tab)
+  detail: string;      // Short description
+  image?: string | null;
+  platform?: string;   // "amazon" | "flipkart"
+  category?: string;   // For filtering
+  discountPercent?: number;
 };
+
+// Category filter tabs shown above the deals grid
+const CATEGORY_TABS = [
+  { label: "All Deals", value: "all" },
+  { label: "Electronics", value: "Electronics" },
+  { label: "Fashion", value: "Fashion" },
+  { label: "Home & Kitchen", value: "Home & Kitchen" },
+  { label: "Beauty", value: "Beauty" },
+] as const;
 
 const navItems = [
   ["#top", "Home"],
@@ -41,68 +62,8 @@ const navItems = [
   ["#cta", "Sign up"],
 ] as const;
 
-const deals: Deal[] = [
-  {
-    store: "Amazon",
-    title: "NoiseFit Halo Smartwatch",
-    price: "₹2,299",
-    original: "₹6,999",
-    off: "67% OFF",
-    tag: "Flash Pick",
-    link: "https://snapdeals.example/deals/noisefit-halo",
-    detail: "AMOLED display, premium metal build, Bluetooth calling, and a verified lightning markdown.",
-  },
-  {
-    store: "Flipkart",
-    title: "Samsung 4K Crystal TV",
-    price: "₹31,990",
-    original: "₹52,900",
-    off: "40% OFF",
-    tag: "Big Save",
-    link: "https://snapdeals.example/deals/samsung-crystal-4k",
-    detail: "Bank-card stacked pricing on a 43-inch 4K panel with HDR, smart apps, and low delivery fee.",
-  },
-  {
-    store: "Myntra",
-    title: "Roadster Denim Jacket",
-    price: "₹1,199",
-    original: "₹3,499",
-    off: "66% OFF",
-    tag: "Style Drop",
-    link: "https://snapdeals.example/deals/roadster-denim",
-    detail: "Season-ready denim layer with coupon-inclusive pricing and all core sizes currently in stock.",
-  },
-  {
-    store: "Amazon",
-    title: "boAt Airdopes ProGear",
-    price: "₹1,499",
-    original: "₹4,990",
-    off: "70% OFF",
-    tag: "Audio Deal",
-    link: "https://snapdeals.example/deals/boat-airdopes-progear",
-    detail: "Low-latency earbuds with fast charging, clean call mics, and a short-window launch discount.",
-  },
-  {
-    store: "Flipkart",
-    title: "Apple iPad 10th Gen",
-    price: "₹29,999",
-    original: "₹39,900",
-    off: "25% OFF",
-    tag: "Editor Pick",
-    link: "https://snapdeals.example/deals/ipad-10th-gen",
-    detail: "Trusted seller deal with instant card savings on the 64GB Wi‑Fi model in multiple colors.",
-  },
-  {
-    store: "Myntra",
-    title: "Nike Running Sneakers",
-    price: "₹3,247",
-    original: "₹7,995",
-    off: "59% OFF",
-    tag: "Hot Trend",
-    link: "https://snapdeals.example/deals/nike-running-sneakers",
-    detail: "Comfort running silhouette with fresh inventory, exchange support, and stacked style-sale pricing.",
-  },
-];
+// NOTE: Hardcoded deals array removed.
+// Deals are now fetched live from the Express backend API.
 
 const steps = [
   ["01", "Scan", "SnapDeals tracks price drops, bank offers, coupons, and limited-time marketplace campaigns."],
@@ -140,6 +101,76 @@ function Index() {
   const [copiedLink, setCopiedLink] = useState("");
   const [activeSection, setActiveSection] = useState("#top");
 
+  // ── API State ──────────────────────────────────────────────
+  // apiDeals: full list of deals loaded from the backend
+  const [apiDeals, setApiDeals] = useState<Deal[]>([]);
+  // loading: true while the first fetch is in progress
+  const [loading, setLoading] = useState(true);
+  // error: non-null when the API fetch has failed
+  const [error, setError] = useState<string | null>(null);
+  // searchQuery: text typed in the search bar (client-side filter)
+  const [searchQuery, setSearchQuery] = useState("");
+  // activeCategory: which category tab is selected
+  const [activeCategory, setActiveCategory] = useState<string>("all");
+  // refreshInterval ref so we can clear it on unmount
+  const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ── Fetch deals from backend API ───────────────────────────
+  const fetchDeals = useCallback(
+    async (category: string = activeCategory) => {
+      try {
+        // Build the URL — append category filter if not "all"
+        const url =
+          category && category !== "all"
+            ? `${API_BASE_URL}/api/deals?category=${encodeURIComponent(category)}`
+            : `${API_BASE_URL}/api/deals`;
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          throw new Error(`Server returned ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || "Unknown API error");
+        }
+
+        setApiDeals(data.deals || []);
+        setError(null);
+      } catch (err) {
+        console.error("[SnapDeals] Failed to fetch deals:", err);
+        setError("Deals loading, please try again.");
+      } finally {
+        // Always stop the skeleton loader after the first attempt
+        setLoading(false);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  // ── On mount: initial fetch + 30-min auto-refresh ──────────
+  useEffect(() => {
+    fetchDeals("all");
+
+    // Auto-refresh every 30 minutes (1800000 ms)
+    refreshIntervalRef.current = setInterval(() => {
+      console.log("[SnapDeals] Auto-refreshing deals...");
+      fetchDeals(activeCategory);
+    }, 30 * 60 * 1000);
+
+    return () => {
+      // Cleanup the interval when the component unmounts
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Reveal animation observer ──────────────────────────────
   useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const elements = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
@@ -162,7 +193,7 @@ function Index() {
 
     elements.forEach((element) => observer.observe(element));
     return () => observer.disconnect();
-  }, []);
+  }, [apiDeals]); // Re-run when deals change so new cards get observed
 
   useEffect(() => {
     const sectionIds = navItems.map(([href]) => href.slice(1));
@@ -284,39 +315,134 @@ function Index() {
       <section id="deals" className="sd-section">
         <Reveal className="sd-section-heading sd-heading-row">
           <div>
-            <p className="sd-kicker">Sample offers</p>
-            <h2>Glassmorphism deal cards built for quick decisions.</h2>
+            <p className="sd-kicker">Live offers</p>
+            <h2>Real-time deals from Amazon &amp; Flipkart.</h2>
           </div>
           <a href="#cta" className="sd-inline-link">Get deal alerts</a>
         </Reveal>
-        <div className="sd-deals-grid">
-          {deals.map((deal) => (
-            <Reveal key={`${deal.store}-${deal.title}`} className="sd-deal-card-wrap">
-              <article
-                className="sd-deal-card"
-                onPointerMove={handleTilt}
-                onPointerLeave={resetTilt}
-              >
-                <div className="sd-card-topline">
-                  <span>{deal.store}</span>
-                  <em>{deal.tag}</em>
-                </div>
-                <h3>{deal.title}</h3>
-                <p>{deal.detail}</p>
-                <div className="sd-price-row">
-                  <strong>{deal.price}</strong>
-                  <span>{deal.original}</span>
-                </div>
-                <div className="sd-deal-bottom">
-                  <b>{deal.off}</b>
-                  <button type="button" onClick={() => setSelectedDeal(deal)}>Quick view</button>
-                </div>
-                <button type="button" className="sd-copy-link" onClick={() => copyDealLink(deal)}>
-                  {copiedLink === deal.link ? "Copied link" : "Copy deal link"}
-                </button>
-              </article>
-            </Reveal>
+
+        {/* ── Search Bar ───────────────────────────────────────── */}
+        <Reveal className="sd-search-bar">
+          <input
+            id="deals-search"
+            type="search"
+            placeholder="Search deals — e.g. iPhone, Nike, Samsung..."
+            aria-label="Search deals"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </Reveal>
+
+        {/* ── Category Filter Tabs ─────────────────────────────── */}
+        <Reveal className="sd-category-tabs">
+          {CATEGORY_TABS.map((tab) => (
+            <button
+              key={tab.value}
+              type="button"
+              className={`sd-tab-btn${activeCategory === tab.value ? " is-active" : ""}`}
+              onClick={() => {
+                setActiveCategory(tab.value);
+                setLoading(true);
+                fetchDeals(tab.value);
+                // Clear search when switching categories
+                setSearchQuery("");
+              }}
+            >
+              {tab.label}
+            </button>
           ))}
+        </Reveal>
+
+        {/* ── Error Banner ─────────────────────────────────────── */}
+        {error && !loading && (
+          <div className="sd-error-banner" role="alert">
+            <span>⚠️ {error}</span>
+            <button
+              type="button"
+              onClick={() => {
+                setLoading(true);
+                fetchDeals(activeCategory);
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* ── Deals Grid ───────────────────────────────────────── */}
+        <div className="sd-deals-grid">
+          {/* Skeleton loading cards — shown while fetching */}
+          {loading && (
+            <>
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="sd-deal-card-wrap">
+                  <div className="sd-deal-card sd-skeleton" aria-busy="true" aria-label="Loading deal...">
+                    <div className="sd-skeleton-line sd-skeleton-short" />
+                    <div className="sd-skeleton-line sd-skeleton-long" style={{ marginTop: 20 }} />
+                    <div className="sd-skeleton-line sd-skeleton-medium" />
+                    <div className="sd-skeleton-line sd-skeleton-short" style={{ marginTop: 30 }} />
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* Live deal cards — shown after fetch completes */}
+          {!loading &&
+            (() => {
+              // Client-side search filter (applied on top of API category filter)
+              const keyword = searchQuery.trim().toLowerCase();
+              const visibleDeals = keyword
+                ? apiDeals.filter(
+                    (deal) =>
+                      deal.title?.toLowerCase().includes(keyword) ||
+                      deal.store?.toLowerCase().includes(keyword) ||
+                      deal.tag?.toLowerCase().includes(keyword) ||
+                      deal.detail?.toLowerCase().includes(keyword),
+                  )
+                : apiDeals;
+
+              if (visibleDeals.length === 0) {
+                return (
+                  <div className="sd-empty-state">
+                    <p>No deals found{keyword ? ` for "${searchQuery}"` : ""}.</p>
+                    {keyword && (
+                      <button type="button" onClick={() => setSearchQuery("")}>
+                        Clear search
+                      </button>
+                    )}
+                  </div>
+                );
+              }
+
+              return visibleDeals.map((deal) => (
+                <Reveal key={`${deal.store}-${deal.title}-${deal.price}`} className="sd-deal-card-wrap">
+                  <article
+                    className="sd-deal-card"
+                    onPointerMove={handleTilt}
+                    onPointerLeave={resetTilt}
+                  >
+                    <div className="sd-card-topline">
+                      <span>{deal.store}</span>
+                      <em>{deal.tag}</em>
+                    </div>
+                    <h3>{deal.title}</h3>
+                    <p>{deal.detail}</p>
+                    <div className="sd-price-row">
+                      <strong>{deal.price}</strong>
+                      <span>{deal.original}</span>
+                    </div>
+                    <div className="sd-deal-bottom">
+                      <b>{deal.off}</b>
+                      <button type="button" onClick={() => setSelectedDeal(deal)}>Quick view</button>
+                    </div>
+                    <button type="button" className="sd-copy-link" onClick={() => copyDealLink(deal)}>
+                      {copiedLink === deal.link ? "Copied link" : "Copy deal link"}
+                    </button>
+                  </article>
+                </Reveal>
+              ));
+            })()}
         </div>
       </section>
 
@@ -388,7 +514,16 @@ function Index() {
             <p>{selectedDeal.detail}</p>
             <div className="sd-price-row"><strong>{selectedDeal.price}</strong><span>{selectedDeal.original}</span></div>
             <div className="sd-modal-actions">
-              <a href="#cta" className="sd-button sd-button-primary" onClick={() => setSelectedDeal(null)}>Sign up for this deal</a>
+              {/* Open affiliate link in new tab — required for affiliate compliance */}
+              <a
+                href={selectedDeal.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="sd-button sd-button-primary"
+                onClick={() => setSelectedDeal(null)}
+              >
+                Get this deal
+              </a>
               <button type="button" className="sd-button sd-button-secondary" onClick={() => copyDealLink(selectedDeal)}>
                 {copiedLink === selectedDeal.link ? "Copied" : "Copy link"}
               </button>

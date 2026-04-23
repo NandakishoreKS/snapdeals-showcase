@@ -30,3 +30,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Backend — never commit secrets or install artifacts
+.env
+backend/.env
+backend/node_modules/

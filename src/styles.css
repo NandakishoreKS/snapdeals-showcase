@@ -699,3 +699,186 @@ h1, h2, h3 {
   .sd-footer-groups { grid-template-columns: 1fr; gap: 24px; }
   .sd-footer-bottom { flex-direction: column; }
 }
+
+/* =============================================================
+   API Integration UI — Search, Tabs, Skeleton, Error, Empty
+   ============================================================= */
+
+/* Search bar */
+.sd-search-bar {
+  margin-bottom: 18px;
+}
+
+.sd-search-bar input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 22px;
+  border: var(--sd-border);
+  border-radius: 999px;
+  background: oklch(1 0 0 / 80%);
+  backdrop-filter: blur(14px);
+  font: inherit;
+  font-size: 1rem;
+  color: var(--foreground);
+  box-shadow: 0 8px 30px oklch(0 0 0 / 5%);
+  outline: none;
+  transition: border-color 220ms ease, box-shadow 220ms ease;
+}
+
+.sd-search-bar input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px oklch(0.67 0.24 32.5 / 14%), 0 8px 30px oklch(0 0 0 / 5%);
+}
+
+.sd-search-bar input::placeholder {
+  color: var(--muted-foreground);
+}
+
+/* Category filter tabs */
+.sd-category-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.sd-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 18px;
+  border: var(--sd-border);
+  border-radius: 999px;
+  background: oklch(1 0 0 / 72%);
+  backdrop-filter: blur(12px);
+  color: var(--muted-foreground);
+  font: inherit;
+  font-weight: 800;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 220ms ease, color 220ms ease, border-color 220ms ease, transform 220ms ease, box-shadow 220ms ease;
+}
+
+.sd-tab-btn:hover {
+  color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.sd-tab-btn.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--primary-foreground);
+  box-shadow: 0 8px 28px oklch(0.67 0.24 32.5 / 28%);
+}
+
+/* Active nav link */
+.sd-nav-links a.is-active {
+  color: var(--accent);
+}
+
+/* Skeleton loading shimmer animation */
+@keyframes sd-shimmer {
+  0%   { background-position: -700px 0; }
+  100% { background-position: 700px 0; }
+}
+
+.sd-skeleton {
+  pointer-events: none;
+  user-select: none;
+  border-color: transparent !important;
+}
+
+.sd-skeleton-line {
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    oklch(0 0 0 / 6%) 25%,
+    oklch(0 0 0 / 12%) 50%,
+    oklch(0 0 0 / 6%) 75%
+  );
+  background-size: 700px 100%;
+  animation: sd-shimmer 1.4s ease-in-out infinite;
+  height: 14px;
+}
+
+.sd-skeleton-short  { width: 38%; }
+.sd-skeleton-medium { width: 62%; margin-top: 10px; }
+.sd-skeleton-long   { width: 100%; }
+
+/* Error banner */
+.sd-error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 16px 22px;
+  border-radius: 18px;
+  border: 1px solid oklch(0.67 0.24 32.5 / 28%);
+  background: oklch(0.67 0.24 32.5 / 8%);
+  color: var(--foreground);
+  font-weight: 700;
+}
+
+.sd-error-banner button {
+  flex-shrink: 0;
+  min-height: 38px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--primary-foreground);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 200ms ease;
+}
+
+.sd-error-banner button:hover {
+  transform: translateY(-2px);
+}
+
+/* Empty state */
+.sd-empty-state {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--muted-foreground);
+  font-weight: 700;
+}
+
+.sd-empty-state p {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.sd-empty-state button {
+  min-height: 42px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--secondary);
+  color: var(--foreground);
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+  transition: background 200ms ease, transform 200ms ease;
+}
+
+.sd-empty-state button:hover {
+  background: var(--accent);
+  color: var(--primary-foreground);
+  transform: translateY(-2px);
+}
+
+/* Responsive: stack tabs on mobile */
+@media (max-width: 620px) {
+  .sd-category-tabs { gap: 8px; }
+  .sd-tab-btn { font-size: 0.82rem; padding: 0 14px; min-height: 36px; }
+}
+
